@@ -30,7 +30,8 @@ public final class NativeLibLoader {
     private static final Log logger = LogFactory.getLog(NativeLibLoader.class);
 
     private static final String keyUserDefinedLib = "hivemall.xgboost.lib";
-    private static final String libPath = "/lib/";
+    private static final String sp = File.separator;
+    private static final String libPath = sp + "lib" + sp + getOSArchString() + sp;
 
     private static boolean initialized = false;
 
@@ -54,7 +55,39 @@ public final class NativeLibLoader {
     }
 
     private static String getOSName() {
-        return System.getProperty("os.name");
+        return System.getProperty("os.name").toLowerCase();
+    }
+
+    private static String getOSArch() {
+        return System.getProperty("os.arch").toLowerCase();
+    }
+
+    private static String getOSArchString() {
+        String os = getOSName();
+        if(os.startsWith("linux")) {
+            os = "linux";
+        } else if(os.startsWith("mac")) {
+            os = "darwin";
+        } else if(os.startsWith("windows")) {
+            os = "windows";
+        }
+
+        String arch = getOSArch();
+        if(arch.equals("amd64") || arch.equals("x86_64")) {
+            arch = "x64";
+        } else if(arch.endsWith("86")) {
+            arch = "x86";
+        } else if(arch.indexOf("arm64") != -1) {
+            arch = "arm64";
+        } else if(arch.indexOf("armv6") != -1) {
+            arch = "armv6";
+        } else if(arch.indexOf("armv7") != -1) {
+            arch = "armv7";
+        } else if(arch.indexOf("ppc") != -1) {
+            arch = "ppc64le";
+        }
+
+        return os + "-" + arch;
     }
 
     private static void tryLoadNativeLibFromResource(final String libName) {
@@ -62,7 +95,7 @@ public final class NativeLibLoader {
         String resolvedLibName = System.mapLibraryName(libName);
 
         if(!hasResource(libPath + resolvedLibName)) {
-            if(!getOSName().equals("Mac")) {
+            if(!getOSName().startsWith("mac")) {
                 return;
             }
             // Fix for openjdk7 for Mac
